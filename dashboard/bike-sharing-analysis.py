@@ -82,6 +82,11 @@ def create_hourly_average_rent(df):
 
     return hourly_rent_df
 
+# Function to calculate seasonal average rentals without date 
+def create_seasonal_average_rental_no_date(df):
+    seasonal_rent_no_date_df = df[['season_day', 'cnt_day']].groupby('season_day')['cnt_day'].mean()
+    seasonal_rent_no_date_df = seasonal_rent_no_date_df.reset_index()
+    return seasonal_rent_no_date_df
 
 # Function to calculate weather average rentals without date
 def create_avg_rent_based_weathersit(df):
@@ -102,7 +107,9 @@ def create_hour_rent_based_workingday(df, workingday):
 monthly_rent_df = create_monthly_average_rent(main_df)
 seasonal_rent_df = create_seasonal_average_rental(main_df)
 hourly_rent_df = create_hourly_average_rent(main_df)
+
 # Menghitung rata-rata penyewaan per musim dan cuaca tanpa tanggal
+seasonal_rent_no_date_df = create_seasonal_average_rental_no_date(bikesharing_df)
 weather_rent_no_date_df = create_avg_rent_based_weathersit(bikesharing_df)
 
 # Menampilkan informasi dashboard
@@ -166,6 +173,26 @@ with tab1:
 # Visualisasi Lainnya
 with tab2:
     st.subheader('Visualisasi Lainnya ')
+
+    # Grafik rata-rata penyewaan per musim tanpa tanggal
+    seasonal_rent_no_date_chart = px.bar(
+        seasonal_rent_no_date_df,
+        x='season_day',
+        y='cnt_day',
+        color='season_day',
+        title='Rata-rata Penyewaan Sepeda per Musim'
+    )
+    st.plotly_chart(seasonal_rent_no_date_chart.update_layout(xaxis_title='Musim', yaxis_title='Jumlah Rata-rata'))
+
+    # Grafik rata-rata penyewaan per cuaca tanpa tanggal
+    weather_rent_no_date_chart = px.bar(
+        weather_rent_no_date_df,
+        x='weathersit_day',
+        y='cnt_day',
+        color='weathersit_day',
+        title='Rata-rata Penyewaan Sepeda per Cuaca'
+    )
+    st.plotly_chart(weather_rent_no_date_chart.update_layout(xaxis_title='Cuaca', yaxis_title='Jumlah Rata-rata'))
 
     
     workingday = st.selectbox(
