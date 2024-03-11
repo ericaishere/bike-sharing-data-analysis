@@ -28,12 +28,12 @@ main_df = bikesharing_df[(bikesharing_df['dteday'] >= str(start_date)) &
 
 # Menghitung total penyewaan dan penyewa
 total_rent = main_df['cnt_day'].sum()
-casual_renter = main_df['casual_day'].sum()
-registered_renter = main_df['registered_day'].sum()
+casual_rent = main_df['casual_day'].sum()
+registered_rent = main_df['registered_day'].sum()
 
 
 # Function to calculate monthly average rentals 
-def calculate_monthly_avg_rent(df):
+def create_monthly_average_rent(df):
     monthly_rent_df = df.resample(rule='M', on='dteday').agg({
         'cnt_day': 'mean',
         'casual_day': 'mean',
@@ -44,14 +44,14 @@ def calculate_monthly_avg_rent(df):
     monthly_rent_df = monthly_rent_df.reset_index()
     monthly_rent_df.rename(columns={
         'cnt_day': 'total_rental',
-        'casual_day': 'casual_renter',
-        'registered_day': 'registered_renter'
+        'casual_day': 'casual_rent',
+        'registered_day': 'registered_rent'
     }, inplace=True)
 
     return monthly_rent_df
 
 # Function to calculate seasonal average rentals 
-def calculate_seasonal_avg_rent(df):
+def create_seasonal_average_rental(df):
     seasonal_rent_df = df.groupby('season_day').agg({
         'cnt_day': 'mean',
         'casual_day': 'mean',
@@ -60,14 +60,14 @@ def calculate_seasonal_avg_rent(df):
     seasonal_rent_df = seasonal_rent_df.reset_index()
     seasonal_rent_df.rename(columns={
         'cnt_day': 'total_rental',
-        'casual_day': 'casual_renter',
-        'registered_day': 'registered_renter'
+        'casual_day': 'casual_rent',
+        'registered_day': 'registered_rent'
     }, inplace=True)
 
     return seasonal_rent_df
 
 # Function to calculate hourly average rentals
-def calculate_hourly_avg_rent(df):
+def create_hourly_average_rent(df):
     hourly_rent_df = df.groupby('hr').agg({
         'cnt_day': 'mean',
         'casual_day': 'mean',
@@ -76,26 +76,21 @@ def calculate_hourly_avg_rent(df):
     hourly_rent_df = hourly_rent_df.reset_index()
     hourly_rent_df.rename(columns={
         'cnt_day': 'total_rental',
-        'casual_day': 'casual_renter',
-        'registered_day': 'registered_renter'
+        'casual_day': 'casual_rent',
+        'registered_day': 'registered_rent'
     }, inplace=True)
 
     return hourly_rent_df
 
-# Function to calculate seasonal average rentals without date 
-def calculate_seasonal_avg_rent_no_date(df):
-    seasonal_rent_no_date_df = df[['season_day', 'cnt_day']].groupby('season_day')['cnt_day'].mean()
-    seasonal_rent_no_date_df = seasonal_rent_no_date_df.reset_index()
-    return seasonal_rent_no_date_df
 
 # Function to calculate weather average rentals without date
-def calculate_weather_avg_rent_no_date(df):
+def create_avg_rent_based_weathersit(df):
     weather_rent_no_date_df = df[['weathersit_day', 'cnt_day']].groupby('weathersit_day')['cnt_day'].mean()
     weather_rent_no_date_df = weather_rent_no_date_df.reset_index()
     return weather_rent_no_date_df
 
 # Function to calculate hourly rentals by season
-def calculate_hourly_rent_by_workingday(df, workingday):
+def create_hour_rent_based_workingday(df, workingday):
     hourly_rent_by_workingday_df = df[['workingday_hour', 'hr', 'cnt_hour']]
     hourly_rent_by_workingday_df = hourly_rent_by_workingday_df[hourly_rent_by_workingday_df['workingday_hour'] == workingday].groupby(['workingday_hour', 'hr'])['cnt_hour'].mean().reset_index()
     return hourly_rent_by_workingday_df
@@ -104,13 +99,11 @@ def calculate_hourly_rent_by_workingday(df, workingday):
 
 
 # Menghitung rata-rata penyewaan per bulan, musim, dan jam
-monthly_rent_df = calculate_monthly_avg_rent(main_df)
-seasonal_rent_df = calculate_seasonal_avg_rent(main_df)
-hourly_rent_df = calculate_hourly_avg_rent(main_df)
-
+monthly_rent_df = create_monthly_average_rent(main_df)
+seasonal_rent_df = create_seasonal_average_rental(main_df)
+hourly_rent_df = create_hourly_average_rent(main_df)
 # Menghitung rata-rata penyewaan per musim dan cuaca tanpa tanggal
-seasonal_rent_no_date_df = calculate_seasonal_avg_rent_no_date(bikesharing_df)
-weather_rent_no_date_df = calculate_weather_avg_rent_no_date(bikesharing_df)
+weather_rent_no_date_df = create_avg_rent_based_weathersit(bikesharing_df)
 
 # Menampilkan informasi dashboard
 st.header('Bike Sharing Dashboard')
@@ -125,9 +118,9 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.metric('Total Penyewaan', '{:,.0f}'.format(total_rent).replace(',', '.'))
 with col2:
-    st.metric('Total Penyewa Kasual', '{:,.0f}'.format(casual_renter).replace(',', '.'))
+    st.metric('Total Penyewa Kasual', '{:,.0f}'.format(casual_rent).replace(',', '.'))
 with col3:
-    st.metric('Total Penyewa Terdaftar', '{:,.0f}'.format(registered_renter).replace(',', '.'))
+    st.metric('Total Penyewa Terdaftar', '{:,.0f}'.format(registered_rent).replace(',', '.'))
 
 # Tab untuk visualisasi utama dan tambahan
 tab1, tab2 = st.tabs(['Visualisasi Utama', 'Visualisasi Lainnya'])
@@ -141,7 +134,7 @@ with tab1:
     monthly_rent_chart = px.line(
         monthly_rent_df,
         x='dteday',
-        y=['total_rental', 'casual_renter', 'registered_renter'],
+        y=['total_rental', 'casual_rent', 'registered_rent'],
         color_discrete_sequence = px.colors.qualitative.Pastel,
         title='Rata-rata Penyewaan Sepeda per Bulan',
         markers=True
@@ -152,7 +145,7 @@ with tab1:
     seasonal_rent_chart = px.bar(
         seasonal_rent_df,
         x='season_day',
-        y=["casual_renter", "registered_renter"],
+        y=["casual_rent", "registered_rent"],
         title='Rata-rata Penyewaan Sepeda per Musim (Berdasarkan Tanggal)',
         color_discrete_sequence = px.colors.qualitative.Pastel
 
@@ -163,7 +156,7 @@ with tab1:
     hourly_rent_chart = px.bar(
         hourly_rent_df,
         x='hr',
-        y=["casual_renter", "registered_renter"],
+        y=["casual_rent", "registered_rent"],
         title='Rata-rata Penyewaan Sepeda per Jam (Berdasarkan Tanggal)',
         color_discrete_sequence = px.colors.qualitative.Pastel
 
@@ -173,26 +166,6 @@ with tab1:
 # Visualisasi Lainnya
 with tab2:
     st.subheader('Visualisasi Lainnya ')
-
-    # Grafik rata-rata penyewaan per musim tanpa tanggal
-    seasonal_rent_no_date_chart = px.bar(
-        seasonal_rent_no_date_df,
-        x='season_day',
-        y='cnt_day',
-        color='season_day',
-        title='Rata-rata Penyewaan Sepeda per Musim'
-    )
-    st.plotly_chart(seasonal_rent_no_date_chart.update_layout(xaxis_title='Musim', yaxis_title='Jumlah Rata-rata'))
-
-    # Grafik rata-rata penyewaan per cuaca tanpa tanggal
-    weather_rent_no_date_chart = px.bar(
-        weather_rent_no_date_df,
-        x='weathersit_day',
-        y='cnt_day',
-        color='weathersit_day',
-        title='Rata-rata Penyewaan Sepeda per Cuaca'
-    )
-    st.plotly_chart(weather_rent_no_date_chart.update_layout(xaxis_title='Cuaca', yaxis_title='Jumlah Rata-rata'))
 
     
     workingday = st.selectbox(
@@ -206,7 +179,7 @@ with tab2:
         'work': px.colors.qualitative.Plotly[1],
     }
     color = color_palette.get(workingday, 'blue')
-    hourly_rent_by_workingday_df = calculate_hourly_rent_by_workingday(bikesharing_df, workingday)
+    hourly_rent_by_workingday_df = create_hour_rent_based_workingday(bikesharing_df, workingday)
     hourly_rent_by_workingday_chart = px.line(
     hourly_rent_by_workingday_df,
     x='hr',
