@@ -1,3 +1,14 @@
+## Setup Environment
+
+```
+pip install matplotlib numpy pandas plotly seaborn streamlit
+```
+or
+```
+pip install -r requirements.txt
+```
+
+
 ## Cara Menjalankan Dashboard Streamlit
 
 Berikut adalah langkah-langkah untuk menjalankan dashboard Streamlit untuk proyek **bike-sharing-data-analysis**
