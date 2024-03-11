@@ -5,12 +5,12 @@ import numpy as np
 import streamlit as st
 import plotly.express as px
 
-bike_df = pd.read_csv('https://raw.githubusercontent.com/ericaishere/bike-sharing-data-analysis/main/dashboard/bikesharing_df.csv')
-bike_df['dteday'] = pd.to_datetime(bike_df['dteday'])
+bikesharing_df = pd.read_csv('https://raw.githubusercontent.com/ericaishere/bike-sharing-data-analysis/main/dashboard/bikesharing_df.csv')
+bikesharing_df['dteday'] = pd.to_datetime(bikesharing_df['dteday'])
 
 # Sidebar untuk memilih rentang waktu
-min_date = bike_df['dteday'].min()
-max_date = bike_df['dteday'].max()
+min_date = bikesharing_df['dteday'].min()
+max_date = bikesharing_df['dteday'].max()
 
 with st.sidebar:
     st.header('Analisis Data Bike Sharing')
@@ -23,8 +23,8 @@ with st.sidebar:
     )
 
 # Memfilter data berdasarkan rentang waktu yang dipilih
-main_df = bike_df[(bike_df['dteday'] >= str(start_date)) & 
-                 (bike_df['dteday'] <= str(end_date))]
+main_df = bikesharing_df[(bikesharing_df['dteday'] >= str(start_date)) & 
+                 (bikesharing_df['dteday'] <= str(end_date))]
 
 # Menghitung total penyewaan dan penyewa
 total_rent = main_df['cnt_day'].sum()
@@ -95,11 +95,11 @@ def calculate_weather_avg_rent_no_date(df):
     return weather_rent_no_date_df
 
 # Function to calculate hourly rentals by season
-def calculate_hourly_rent_by_season(df, season):
-    hourly_rent_by_season_df = df[['season_hour', 'hr', 'cnt_hour']]
-    hourly_rent_by_season_df = hourly_rent_by_season_df[hourly_rent_by_season_df['season_hour'] == season].groupby(['season_hour', 'hr'])['cnt_hour'].mean()
-    hourly_rent_by_season_df = hourly_rent_by_season_df.reset_index()
-    return hourly_rent_by_season_df
+def calculate_hourly_rent_by_workingday(df, workingday):
+    hourly_rent_by_workingday_df = df[['workingday_hour', 'hr', 'cnt_hour']]
+    hourly_rent_by_workingday_df = hourly_rent_by_workingday_df[hourly_rent_by_workingday_df['workingday_hour'] == workingday].groupby(['workingday_hour', 'hr'])['cnt_hour'].mean().reset_index()
+    return hourly_rent_by_workingday_df
+
 
 
 
@@ -109,8 +109,8 @@ seasonal_rent_df = calculate_seasonal_avg_rent(main_df)
 hourly_rent_df = calculate_hourly_avg_rent(main_df)
 
 # Menghitung rata-rata penyewaan per musim dan cuaca tanpa tanggal
-seasonal_rent_no_date_df = calculate_seasonal_avg_rent_no_date(bike_df)
-weather_rent_no_date_df = calculate_weather_avg_rent_no_date(bike_df)
+seasonal_rent_no_date_df = calculate_seasonal_avg_rent_no_date(bikesharing_df)
+weather_rent_no_date_df = calculate_weather_avg_rent_no_date(bikesharing_df)
 
 # Menampilkan informasi dashboard
 st.header('Bike Sharing Dashboard')
@@ -194,32 +194,28 @@ with tab2:
     )
     st.plotly_chart(weather_rent_no_date_chart.update_layout(xaxis_title='Cuaca', yaxis_title='Jumlah Rata-rata'))
 
-    # Memilih musim untuk melihat rata-rata penyewaan per jam
-    season = st.selectbox(
-        label="Pilih jenis musim:",
-        options=('Fall', 'Spring', 'Summer', 'Winter')
+    
+    workingday = st.selectbox(
+        label="Pilih jenis hari:",
+        options=('holiday', 'work')
     )
 
     # Menghitung rata-rata penyewaan per jam berdasarkan musim yang dipilih
     color_palette = {
-    'Fall': ['#FFC0CB', '#ADD8E6'],
-    'Spring': ['#BDB7ED', '#FFEBEE'],
-    'Summer': ['#FF9999', '#FFFFCC'],
-    'Winter': ['#C2C2F0', '#AACCFF']
+        'holiday': px.colors.qualitative.Plotly[0],
+        'work': px.colors.qualitative.Plotly[1],
     }
+    color = color_palette.get(workingday, 'blue')
+    hourly_rent_by_workingday_df = calculate_hourly_rent_by_workingday(bikesharing_df, workingday)
+    hourly_rent_by_workingday_chart = px.line(
+    hourly_rent_by_workingday_df,
+    x='hr',
+    y='cnt_hour',
+    color_discrete_sequence=[color],
+    title=f'Average Bike Rental Count per Hour on Workingday: {workingday}'
+)
+hourly_rent_by_workingday_chart.update_layout(xaxis_title='Hour', yaxis_title='Mean Count')
+st.plotly_chart(hourly_rent_by_workingday_chart)
 
-
-    color = color_palette.get(season, 'pink')
-
-    hourly_rent_by_season_df = calculate_hourly_rent_by_season(bike_df, season)
-    hourly_rent_by_season_chart = px.bar(
-        hourly_rent_by_season_df,
-        x='hr',
-        y='cnt_hour',
-        color_discrete_sequence=[color],
-        title=f'Rata-rata Jumlah Penyewaan Sepeda per Jam berdasarkan Musim ({season})'
-    )
-    st.plotly_chart(hourly_rent_by_season_chart.update_layout(xaxis_title='Jam', yaxis_title='Jumlah Rata-rata'))
 
 st.caption('Copyright © 2023')
-
